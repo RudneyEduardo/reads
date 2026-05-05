@@ -31,6 +31,12 @@
             transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .central-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
+        }
+
 
         .central-content.animating {
             animation: shrinkExpand 0.8s ease;
@@ -59,17 +65,21 @@
         <article>
             <h1>Main book</h1>
             <figure class="central-content">
-                <img src="/shared-assets/images/examples/elephant.jpg" alt="Elephant at sunset" />
-                <figcaption>An elephant at sunset</figcaption>
+                <img />
             </figure>
             <nav>
                 <button hx-on:click="
                         const el = document.querySelector('.central-content');
                         el.classList.remove('animating');
-                        void el.offsetWidth; /* força reflow (hack importante) */
+                        void el.offsetWidth;
                         el.classList.add('animating');
+                        changeCurrentImageIndex(parseInt(-1));
                     ">Página Anterior</button>
-                <button hx-on:click="alert('You clicked me!')">Próxima Página</button>
+                <button hx-on:click="const el = document.querySelector('.central-content');
+                        el.classList.remove('animating');
+                        void el.offsetWidth;
+                        el.classList.add('animating');
+                        changeCurrentImageIndex(parseInt(1));">Próxima Página</button>
             </nav>
         </article>
     </main>
@@ -82,8 +92,37 @@
         const checkImgsFolderLen = async () => {
             const res = await fetch("./imgs/images.json");
             const imagesArr = await res.json();
-            console.log(imagesArr.length);
+            return imagesArr.length;
         }
+
+        const changeCurrentImageIndex = async (addIterator) => {
+            const imgLen = await checkImgsFolderLen();
+            var currentImgIndex = parseInt(localStorage.getItem("imgIndex"));
+            var possibleNextImgIndex = addIterator + currentImgIndex;
+            if (possibleNextImgIndex >= imgLen || possibleNextImgIndex == -1) { //ultrapassing images quantity
+                localStorage["imgIndex"] = 0;
+                currentImgIndex = 0;
+            }
+            else {
+                localStorage.setItem("imgIndex", possibleNextImgIndex);
+                currentImgIndex = possibleNextImgIndex;
+            }
+
+            setImgPath(currentImgIndex);
+        }
+
+        const setImgPath = (imgIndex) => {
+            var imgEl = document.querySelector("img");
+            console.log(imgEl)
+            imgEl.src = `./imgs/${imgIndex}.png`;
+        }
+
+        htmx.onLoad(function (content) {
+            const imgIndex = parseInt(localStorage.getItem("imgIndex"));
+            if (isNaN(imgIndex))
+                localStorage.setItem("imgIndex", 0);
+            setImgPath(imgIndex);
+        });
     </script>
 </body>
 
