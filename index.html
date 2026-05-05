@@ -118,9 +118,14 @@
         }
 
         htmx.onLoad(function (content) {
-            const imgIndex = parseInt(localStorage.getItem("imgIndex"));
-            if (isNaN(imgIndex))
+            var imgIndex = parseInt(localStorage.getItem("imgIndex"));
+            console.log(imgIndex);
+            if (isNaN(imgIndex)){
+                console.log("is nan")
                 localStorage.setItem("imgIndex", 0);
+                imgIndex = 0;
+            }
+                
             setImgPath(imgIndex);
         });
     </script>
