@@ -5,11 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reads</title>
+
     <style>
         html,
         body {
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #fa8a21;
         }
 
         .main-container {
@@ -21,39 +25,112 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            margin: 0;
+        }
+
+        article {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            color: white;
         }
 
         .central-content {
-            background-color: grey;
+            position: relative;
+
+            background-color: rgb(255, 255, 255);
+
             height: 50vh;
             width: 75vw;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+
+            overflow: hidden;
+
+            border-radius: 12px;
+
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
         }
 
         .central-content img {
             width: 100%;
             height: 100%;
             object-fit: fill;
+            display: block;
         }
-
 
         .central-content.animating {
-            animation: shrinkExpand 0.8s ease;
+            animation: pageUp 0.9s ease;
+            transform-origin: bottom;
         }
 
-        @keyframes shrinkExpand {
+        @keyframes pageUp {
+
             0% {
-                width: 75vw;
+                transform:
+                    perspective(1200px) rotateX(0deg);
             }
 
             50% {
-                width: 30vw;
+                transform:
+                    perspective(1200px) rotateX(-18deg) translateY(-10px);
             }
 
             100% {
-                width: 75vw;
+                transform:
+                    perspective(1200px) rotateX(0deg);
             }
+        }
+
+        .prev,
+        .next {
+            position: absolute;
+
+            top: 50%;
+            transform: translateY(-50%);
+
+            width: 55px;
+            height: 55px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            border: none;
+            border-radius: 50%;
+
+            background-color: rgba(97, 97, 97, 0.35);
+
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+
+            cursor: pointer;
+            user-select: none;
+
+            transition:
+                background-color 0.3s,
+                transform 0.2s;
+
+            z-index: 10;
+        }
+
+        .prev {
+            left: 5%;
+        }
+
+        .next {
+            right: 5%;
+        }
+
+        .prev:hover,
+        .next:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .prev:active,
+        .next:active {
+            transform: translateY(-50%) scale(0.95);
         }
     </style>
 </head>
@@ -63,24 +140,29 @@
 
     <main class="main-container">
         <article>
+
             <h1>Main book</h1>
+
             <figure class="central-content">
+
                 <img />
-            </figure>
-            <nav>
+
                 <button hx-on:click="
-                        const el = document.querySelector('.central-content');
-                        el.classList.remove('animating');
-                        void el.offsetWidth;
-                        el.classList.add('animating');
-                        changeCurrentImageIndex(parseInt(-1));
-                    ">Página Anterior</button>
-                <button hx-on:click="const el = document.querySelector('.central-content');
-                        el.classList.remove('animating');
-                        void el.offsetWidth;
-                        el.classList.add('animating');
-                        changeCurrentImageIndex(parseInt(1));">Próxima Página</button>
-            </nav>
+                        animatePage();
+                        changeCurrentImageIndex(-1);
+                    " class="prev">
+                    &#10094;
+                </button>
+
+                <button hx-on:click="
+                        animatePage();
+                        changeCurrentImageIndex(1);
+                    " class="next">
+                    &#10095;
+                </button>
+
+            </figure>
+
         </article>
     </main>
 
@@ -88,7 +170,20 @@
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js"
         integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V"
         crossorigin="anonymous"></script>
+
     <script>
+
+        const animatePage = () => {
+
+            const el = document.querySelector('.central-content');
+
+            el.classList.remove('animating');
+
+            void el.offsetWidth;
+
+            el.classList.add('animating');
+        }
+
         const checkImgsFolderLen = async () => {
             const res = await fetch("./imgs/images.json");
             const imagesArr = await res.json();
@@ -97,38 +192,56 @@
 
         const changeCurrentImageIndex = async (addIterator) => {
             const imgLen = await checkImgsFolderLen();
-            var currentImgIndex = parseInt(localStorage.getItem("imgIndex"));
-            var possibleNextImgIndex = addIterator + currentImgIndex;
-            if (possibleNextImgIndex >= imgLen || possibleNextImgIndex == -1) { //ultrapassing images quantity
-                localStorage["imgIndex"] = 0;
+
+            let currentImgIndex = parseInt(
+                localStorage.getItem("imgIndex")
+            );
+
+            let possibleNextImgIndex =
+                addIterator + currentImgIndex;
+
+            if (possibleNextImgIndex >= imgLen) {
                 currentImgIndex = 0;
             }
+            else if (possibleNextImgIndex < 0) {
+                currentImgIndex = imgLen - 1;
+            }
             else {
-                localStorage.setItem("imgIndex", possibleNextImgIndex);
                 currentImgIndex = possibleNextImgIndex;
             }
+
+            localStorage.setItem(
+                "imgIndex",
+                currentImgIndex
+            );
 
             setImgPath(currentImgIndex);
         }
 
         const setImgPath = (imgIndex) => {
-            var imgEl = document.querySelector("img");
-            console.log(imgEl)
+
+            const imgEl = document.querySelector("img");
+
             imgEl.src = `./imgs/${imgIndex}.png`;
         }
 
-        htmx.onLoad(function (content) {
-            var imgIndex = parseInt(localStorage.getItem("imgIndex"));
-            console.log(imgIndex);
-            if (isNaN(imgIndex)){
-                console.log("is nan")
+        htmx.onLoad(function () {
+
+            let imgIndex = parseInt(
+                localStorage.getItem("imgIndex")
+            );
+
+            if (isNaN(imgIndex)) {
+
                 localStorage.setItem("imgIndex", 0);
                 imgIndex = 0;
             }
-                
+
             setImgPath(imgIndex);
         });
+
     </script>
+
 </body>
 
 </html>
